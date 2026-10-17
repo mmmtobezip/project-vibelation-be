@@ -1,0 +1,5 @@
+{
+  "formatVersion": "review-v1",
+  "markdownTemplate": "# 검토결과 리포트\n\n{{title}} · 확정 버전 {{version}}\n레거시 기준: {{legacyVersion}}\n\n## 확정 요구사항\n{{requirements}}\n\n## 영향 자원\n{{impacts}}\n",
+  "impactTemplate": "- [{{type}}] {{name}} ({{path}}): {{current}} -> {{proposed}} — {{reason}} ({{days}}일)"
+}

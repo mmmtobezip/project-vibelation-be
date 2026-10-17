@@ -1,0 +1,45 @@
+# OS (macOS)
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Env / secrets / tokens
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*credentials*
+*secret*
+.netrc
+
+# Local DB / runtime artifacts
+*.db
+*.sqlite3
+
+# Local-only design docs (reference material, not shipped)
+/docs/*.md
+!/docs/README.md
+
+# IDE
+.idea/
+.vscode/

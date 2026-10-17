@@ -1,0 +1,28 @@
+{
+  "formatVersion": "analysis-v21",
+  "impacts": [
+    {
+      "id": "ui",
+      "name": "대상 화면",
+      "type": "UI",
+      "path": "legacy/placeholder/View.tsx",
+      "current": "기존 동작",
+      "proposed": "요구사항 반영 동작",
+      "reason": "Mock Agent 자리표시자 — 실제 코드 분석 미수행",
+      "days": 2
+    },
+    {
+      "id": "logic",
+      "name": "대상 로직",
+      "type": "Logic",
+      "path": "legacy/placeholder/logic.ts",
+      "current": "기존 처리",
+      "proposed": "요구사항 반영 처리",
+      "reason": "Mock Agent 자리표시자",
+      "days": 1.5
+    }
+  ],
+  "totalDays": 3.5,
+  "durationDays": 4,
+  "bufferDays": 1
+}

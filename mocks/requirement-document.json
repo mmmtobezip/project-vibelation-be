@@ -1,0 +1,4 @@
+{
+  "formatVersion": "requirement-v1",
+  "markdownTemplate": "# 요구사항 MD · 생성 {{generationNumber}}\n\n{{title}}\n입력 버전: {{inputRevision}}\n\n> Mock Agent 응답 · 실제 AI 추출/과거 MD 종합은 아직 수행하지 않습니다.\n\n## 대화·텍스트 원문\n{{text}}\n\n## HTML 원문\n```html\n{{html}}\n```\n\n## 첨부 입력\n{{attachments}}\n"
+}
