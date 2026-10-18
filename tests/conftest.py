@@ -15,10 +15,11 @@ async def poll(client: AsyncClient, url: str) -> dict:
     raise AssertionError(f"job at {url} never finished: {job}")
 
 
-async def confirmed_request(client: AsyncClient) -> dict:
-    """Creates a request, generates+selects a MD, and confirms it.
+async def generated_document(client: AsyncClient) -> dict:
+    """Creates a request, generates a MD, and selects it (no confirmation yet).
 
-    Returns {"requestId", "confirmation", "document"}.
+    Returns {"requestId", "document", "requestRevision"} (requestRevision is
+    the value *after* selection, ready to pass as expectedRequestRevision).
     """
     created = (
         await client.post("/requests", json={"title": "에러 케이스 테스트", "legacyReferenceId": "legacy-01"})
@@ -52,15 +53,26 @@ async def confirmed_request(client: AsyncClient) -> dict:
         )
     ).json()
 
+    return {"requestId": request_id, "document": document, "requestRevision": selected["requestRevision"]}
+
+
+async def confirmed_request(client: AsyncClient) -> dict:
+    """Builds on generated_document() and confirms the selected MD.
+
+    Returns {"requestId", "confirmation", "document"}.
+    """
+    ctx = await generated_document(client)
+    document = ctx["document"]
+
     confirmation = (
         await client.post(
-            f"/requests/{request_id}/requirement-confirmations",
+            f"/requests/{ctx['requestId']}/requirement-confirmations",
             json={
-                "requirementDocumentId": document_id,
-                "expectedInputRevision": selected["inputRevision"],
-                "expectedRequestRevision": selected["requestRevision"],
+                "requirementDocumentId": document["id"],
+                "expectedInputRevision": document["inputRevision"],
+                "expectedRequestRevision": ctx["requestRevision"],
             },
         )
     ).json()
 
-    return {"requestId": request_id, "confirmation": confirmation, "document": document}
+    return {"requestId": ctx["requestId"], "confirmation": confirmation, "document": document}

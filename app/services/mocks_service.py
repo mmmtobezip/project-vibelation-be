@@ -41,6 +41,10 @@ async def start_mock_generation(
         raise errors.invalid_request("file은 .md 여야 합니다.")
     await _validate_manifest(source_files, source_manifest)
 
+    existing = [j for j in store.jobs_for(request_id, "systemMock") if j["status"] in ("queued", "running")]
+    if existing:
+        raise errors.job_already_running(existing[0]["id"])
+
     generation_number = await store.next_generation_number(request_id, "systemMock")
     job = build_job(
         new_id("job"),

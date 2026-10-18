@@ -4,7 +4,28 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
-from tests.conftest import confirmed_request, poll
+from tests.conftest import confirmed_request, generated_document, poll
+
+
+@pytest.mark.asyncio
+async def test_job_already_running_blocks_concurrent_mock_generation():
+    """Regression test for a gap found while writing the MOCK API test report:
+    mocks_service.start_mock_generation was missing the same queued/running
+    guard requirements_service/analyses_service already had."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test/api") as client:
+        ctx = await generated_document(client)
+        files = {"file": ("requirements.md", ctx["document"]["markdown"].encode("utf-8"), "text/markdown")}
+        data = {"requirementDocumentId": ctx["document"]["id"], "legacyVersion": "DEMO-2026.10"}
+
+        first = await client.post(f"/requests/{ctx['requestId']}/system-mock-generations", data=data, files=files)
+        second = await client.post(f"/requests/{ctx['requestId']}/system-mock-generations", data=data, files=files)
+
+        assert first.status_code == 202
+        assert second.status_code == 409
+        error = second.json()["detail"]["error"]
+        assert error["code"] == "JOB_ALREADY_RUNNING"
+        assert error["details"]["jobId"] == first.json()["id"]
 
 
 @pytest.mark.asyncio
