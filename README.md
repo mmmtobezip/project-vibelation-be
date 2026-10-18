@@ -43,8 +43,20 @@
 6. 선택 HTML 생성·검증·FE 연동
 7. 운영 인증·장애·동시성
 
-현재는 1단계 이전의 **스캐폴드 뼈대만** 있는 상태 — 라우터는 등록되어 있지만 전부
-`NotImplementedError`(HTTP 501)를 반환한다.
+핵심 28개(REQ/REF/FILE/MD/MOCK-01·03·05/CONF/ANA/RPT/REG)는 인메모리 저장소 +
+Mock Agent로 실제로 동작한다 (DB 없음, 서버 재시작하면 초기화됨). ZIP 관리
+6개(SYS/SRC)는 여전히 501 placeholder. 자세한 검증 방법은 `TESTING.md`,
+MOCK API 실측 결과는 `MOCK_API_TEST_REPORT.md` 참고.
+
+## Mock 데이터
+
+`mocks/*.json`이 Mock Agent 응답 템플릿이다 (`mocks/README.md` 참고). 요청의
+`title`/`legacyVersion` 등을 템플릿에 끼워 넣어서 요청마다 결과가 달라지도록
+파라미터화돼 있다 — 숫자(공수 등)는 고정, 텍스트 필드만 바뀐다.
+
+`SEED_DEMO_HISTORY=true`(기본값)면 서버 기동 시 과거 검토 이력 3건을 자동으로
+채워 넣는다 (`app/repositories/seed.py`) — History 화면이 빈 상태로 시작하지
+않게 하기 위함. 끄려면 `.env`에 `SEED_DEMO_HISTORY=false`.
 
 ## 로컬 실행
 

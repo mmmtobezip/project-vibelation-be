@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import api_router
 from app.core.settings import settings
+from app.repositories.memory import store
+from app.repositories.seed import seed_history
 
 
 @asynccontextmanager
@@ -30,6 +32,9 @@ def create_app() -> FastAPI:
         )
 
     app.include_router(api_router)
+
+    if settings.seed_demo_history:
+        seed_history(store)
 
     @app.get("/health/live")
     async def health_live():

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     worker_concurrency: int = 2
     log_level: str = "info"
     dev_auth: bool = True
+    seed_demo_history: bool = True
 
 
 settings = Settings()
