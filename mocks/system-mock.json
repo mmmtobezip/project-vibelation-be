@@ -1,4 +1,4 @@
 {
   "formatVersion": "system-mock-v1",
-  "html": "<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'\"><style>body{font-family:sans-serif;padding:16px}</style></head><body><h1>시스템 적용 예상 화면 (Mock)</h1><p>Mock Agent가 생성한 단독 실행 HTML 자리표시자입니다. 외부 통신은 CSP로 차단됩니다.</p></body></html>"
+  "htmlTemplate": "<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'\"><style>body{font-family:sans-serif;padding:16px}</style></head><body><h1>{{title}} — 시스템 적용 예상 화면 (Mock)</h1><p>레거시 기준 <strong>{{legacyVersion}}</strong>, 요구사항 문서 <code>{{requirementDocumentId}}</code> 기준 Mock Agent 자리표시자입니다. 외부 통신은 CSP로 차단됩니다.</p></body></html>"
 }

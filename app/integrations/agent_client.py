@@ -62,16 +62,28 @@ def render_requirement_document(job: dict, input_snapshot: dict) -> dict:
     return {"markdown": markdown, "formatVersion": fixture["formatVersion"]}
 
 
-def render_system_mock() -> dict:
+def render_system_mock(context: dict) -> dict:
+    """context: {title, legacyVersion, requirementDocumentId}."""
     fixture = _load("system-mock")
-    return {"html": fixture["html"], "formatVersion": fixture["formatVersion"]}
+    html = render_template(fixture["htmlTemplate"], context)
+    return {"html": html, "formatVersion": fixture["formatVersion"]}
 
 
-def render_analysis_result() -> dict:
-    """api_interface_v06.md §21 shape: impacts/totalDays/durationDays/bufferDays."""
+def render_analysis_result(context: dict) -> dict:
+    """api_interface_v06.md §21 shape: impacts/totalDays/durationDays/bufferDays.
+
+    context: {title, legacyVersion} — substituted into each impact's text
+    fields so two different requests don't produce byte-identical results.
+    Numeric fields (days/totalDays/...) stay fixed; this is still a Mock
+    Agent, not a real estimator.
+    """
     fixture = _load("analysis-result")
+    impacts = [
+        {k: (render_template(v, context) if isinstance(v, str) else v) for k, v in impact.items()}
+        for impact in fixture["impacts"]
+    ]
     return {
-        "impacts": fixture["impacts"],
+        "impacts": impacts,
         "totalDays": fixture["totalDays"],
         "durationDays": fixture["durationDays"],
         "bufferDays": fixture["bufferDays"],

@@ -69,7 +69,14 @@ def get_mock_generation(request_id: str, job_id: str) -> dict:
             job["status"] = "running"
         return job
 
-    rendered = agent_client.render_system_mock()
+    doc = store.requirement_documents.get(job["basis"]["requirementDocumentId"], {})
+    rendered = agent_client.render_system_mock(
+        {
+            "title": doc.get("title", ""),
+            "legacyVersion": job["basis"]["legacyVersion"],
+            "requirementDocumentId": job["basis"]["requirementDocumentId"],
+        }
+    )
     artifact_id = new_id("screen")
     artifact = {
         "id": artifact_id,

@@ -71,7 +71,10 @@ def get_analysis_job(job_id: str) -> dict:
             job["status"] = "running"
         return job
 
-    rendered = agent_client.render_analysis_result()
+    doc = store.requirement_documents.get(job["basis"]["requirementDocumentId"], {})
+    rendered = agent_client.render_analysis_result(
+        {"title": doc.get("title", ""), "legacyVersion": job["basis"]["legacyVersion"]}
+    )
     analysis_id = new_id("analysis")
     analysis = {
         "id": analysis_id,
