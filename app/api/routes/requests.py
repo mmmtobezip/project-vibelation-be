@@ -1,7 +1,8 @@
 """REQ-01~04, REF-01 — api_interface_v06.md §4, §5, §19.1."""
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Header, status
 
+from app.api.dependencies import canonical_hash, check_idempotency, get_current_identity, save_idempotency
 from app.schemas.requests import CreateRequestBody, PatchRequestBody
 from app.services import requests_service
 
@@ -9,9 +10,19 @@ router = APIRouter(tags=["requests"])
 
 
 @router.post("/requests", status_code=status.HTTP_201_CREATED)
-async def create_request(body: CreateRequestBody):
-    """REQ-01 요청 생성."""
-    return requests_service.create_request(body.title, body.legacy_reference_id)
+async def create_request(
+    body: CreateRequestBody,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+):
+    """REQ-01 요청 생성 (§2 공통 규약: 생성은 Idempotency-Key 필수)."""
+    identity = await get_current_identity()
+    body_hash = canonical_hash(body.model_dump())
+    cached = check_idempotency(identity["id"], "POST", "/api/requests", idempotency_key, body_hash)
+    if cached is not None:
+        return cached
+    result = requests_service.create_request(body.title, body.legacy_reference_id)
+    save_idempotency(identity["id"], "POST", "/api/requests", idempotency_key, body_hash, result)
+    return result
 
 
 @router.get("/requests")

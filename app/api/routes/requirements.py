@@ -1,7 +1,8 @@
 """MD-01~05 — api_interface_v06.md §8, §19.1."""
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Header, status
 
+from app.api.dependencies import canonical_hash, check_idempotency, get_current_identity, save_idempotency
 from app.schemas.requirements import StartGenerationBody
 from app.services import requirements_service
 
@@ -12,9 +13,21 @@ router = APIRouter(tags=["requirements"])
     "/requests/{request_id}/requirement-generations",
     status_code=status.HTTP_202_ACCEPTED,
 )
-async def start_requirement_generation(request_id: str, body: StartGenerationBody):
+async def start_requirement_generation(
+    request_id: str,
+    body: StartGenerationBody,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+):
     """MD-01 요구사항 문서 생성 (△ backend-design_v01.md §8.1)."""
-    return await requirements_service.start_generation(request_id, body)
+    identity = await get_current_identity()
+    route = f"/api/requests/{request_id}/requirement-generations"
+    body_hash = canonical_hash(body.model_dump())
+    cached = check_idempotency(identity["id"], "POST", route, idempotency_key, body_hash)
+    if cached is not None:
+        return cached
+    result = await requirements_service.start_generation(request_id, body)
+    save_idempotency(identity["id"], "POST", route, idempotency_key, body_hash, result)
+    return result
 
 
 @router.get("/requests/{request_id}/requirement-generations")

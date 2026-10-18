@@ -2,9 +2,9 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Response, status
+from fastapi import APIRouter, Header, Query, Response, status
 
-from app.api.dependencies import get_current_identity
+from app.api.dependencies import canonical_hash, check_idempotency, get_current_identity, save_idempotency
 from app.schemas.history import RegisterReviewBody
 from app.services import history_service
 
@@ -12,11 +12,22 @@ router = APIRouter(tags=["history"])
 
 
 @router.post("/review-registrations")
-async def register_review(body: RegisterReviewBody, response: Response):
+async def register_review(
+    body: RegisterReviewBody,
+    response: Response,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+):
     """REG-01 최종 검토 등록."""
     identity = await get_current_identity()
+    route = "/api/review-registrations"
+    body_hash = canonical_hash(body.model_dump())
+    cached = check_idempotency(identity["id"], "POST", route, idempotency_key, body_hash)
+    if cached is not None:
+        response.status_code = status.HTTP_200_OK
+        return cached
     registration, is_new = history_service.register(body, identity)
     response.status_code = status.HTTP_201_CREATED if is_new else status.HTTP_200_OK
+    save_idempotency(identity["id"], "POST", route, idempotency_key, body_hash, registration)
     return registration
 
 
