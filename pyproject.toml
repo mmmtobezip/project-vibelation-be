@@ -12,6 +12,7 @@ dependencies = [
     "asyncpg>=0.29,<0.30",
     "alembic>=1.13,<1.14",
     "httpx>=0.27,<0.28",
+    "python-multipart>=0.0.12,<0.1",
 ]
 
 [project.optional-dependencies]
@@ -23,6 +24,11 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+pythonpath = ["."]
+# pydantic 2.12 emits a spurious UnsupportedFieldAttributeWarning for every
+# alias_generator-based CamelModel field; alias resolution itself works
+# correctly (verified in tests/test_golden_path.py), this just silences noise.
+filterwarnings = ["ignore::UserWarning"]
 
 [build-system]
 requires = ["hatchling"]

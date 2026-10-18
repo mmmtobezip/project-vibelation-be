@@ -1,41 +1,97 @@
-"""Agent client Protocol + Mock implementation.
+"""Mock Agent response rendering.
 
-Internal contract per backend-design_v01.md §9:
-  POST /internal/v1/tasks
-  GET  /internal/v1/tasks/by-operation/{operationId}
-  GET  /internal/v1/tasks/{taskId}
-  GET  /internal/v1/tasks/{taskId}/result
+For this Mock-data stage there is no real Agent HTTP service, so "dispatch" is
+simulated the same way FE's local mocks already do it
+(src/services/requirements.ts / systemMocks.ts): a Job becomes ready once
+RUNNING_THRESHOLD_MS has elapsed since its createdAt, and the result is
+rendered deterministically from the repo-root mocks/*.json fixtures by
+substituting {{placeholder}} tokens.
 
-kind: requirement | systemMock | analysis | report | attachmentExtraction
-
-Mock 응답 모양은 레포 루트 mocks/*.json 템플릿을 그대로 따른다. analysis의
-경우 api_interface_v06.md §21(최신 override)을 기준으로
-impacts/totalDays/durationDays/bufferDays 단순 포맷을 쓴다 — 이는 FE의
-src/domain/types.ts Analysis/Impact 타입과 1:1 대응한다.
-
-실제 결정적 응답 생성 로직(fixture 로드 + 자리표시자 치환)은 다음 단계에서
-구현한다. 지금은 Protocol 형태만 고정해 라우터/서비스가 import할 수 있게 한다.
+When a real Agent server exists (backend-design_v01.md §9 internal
+operationId/taskId contract), this module's render_* functions become the
+MockAgentClient implementation behind the same AgentClient Protocol an
+HttpAgentClient would also implement.
 """
 
-from typing import Protocol
+import json
+from datetime import datetime
+from pathlib import Path
+
+MOCKS_DIR = Path(__file__).resolve().parents[2] / "mocks"
+RUNNING_THRESHOLD_MS = 900
 
 
-class AgentClient(Protocol):
-    async def submit(self, operation_id: str, kind: str, basis: dict, input: dict) -> dict: ...
-
-    async def get_status(self, task_id: str) -> dict: ...
-
-    async def get_result(self, task_id: str) -> dict: ...
+def _load(name: str) -> dict:
+    with open(MOCKS_DIR / f"{name}.json", encoding="utf-8") as f:
+        return json.load(f)
 
 
-class MockAgentClient:
-    """TODO: load backend-root mocks/*.json fixtures and return deterministic results."""
+def render_template(template: str, values: dict) -> str:
+    out = template
+    for key, value in values.items():
+        out = out.replace("{{" + key + "}}", str(value))
+    return out
 
-    async def submit(self, operation_id: str, kind: str, basis: dict, input: dict) -> dict:
-        raise NotImplementedError
 
-    async def get_status(self, task_id: str) -> dict:
-        raise NotImplementedError
+def elapsed_ms(created_at_iso: str) -> float:
+    created = datetime.fromisoformat(created_at_iso.replace("Z", "+00:00"))
+    now = datetime.now(created.tzinfo)
+    return (now - created).total_seconds() * 1000
 
-    async def get_result(self, task_id: str) -> dict:
-        raise NotImplementedError
+
+def is_ready(job: dict) -> bool:
+    return elapsed_ms(job["createdAt"]) >= RUNNING_THRESHOLD_MS
+
+
+def render_requirement_document(job: dict, input_snapshot: dict) -> dict:
+    fixture = _load("requirement-document")
+    markdown = render_template(
+        fixture["markdownTemplate"],
+        {
+            "generationNumber": job["generationNumber"],
+            "title": input_snapshot["title"],
+            "inputRevision": input_snapshot["inputRevision"],
+            "text": input_snapshot.get("text") or "(미입력)",
+            "html": input_snapshot.get("html") or "<!-- 미입력 -->",
+            "attachments": "\n".join(
+                f"- {name}" for name in input_snapshot.get("attachmentNames", [])
+            )
+            or "(없음)",
+        },
+    )
+    return {"markdown": markdown, "formatVersion": fixture["formatVersion"]}
+
+
+def render_system_mock() -> dict:
+    fixture = _load("system-mock")
+    return {"html": fixture["html"], "formatVersion": fixture["formatVersion"]}
+
+
+def render_analysis_result() -> dict:
+    """api_interface_v06.md §21 shape: impacts/totalDays/durationDays/bufferDays."""
+    fixture = _load("analysis-result")
+    return {
+        "impacts": fixture["impacts"],
+        "totalDays": fixture["totalDays"],
+        "durationDays": fixture["durationDays"],
+        "bufferDays": fixture["bufferDays"],
+        "formatVersion": fixture["formatVersion"],
+    }
+
+
+def render_review_report(context: dict) -> dict:
+    fixture = _load("review-report")
+    impacts_md = "\n".join(
+        render_template(fixture["impactTemplate"], impact) for impact in context["impacts"]
+    )
+    markdown = render_template(
+        fixture["markdownTemplate"],
+        {
+            "title": context["title"],
+            "version": context["version"],
+            "legacyVersion": context["legacyVersion"],
+            "requirements": context["requirements"],
+            "impacts": impacts_md,
+        },
+    )
+    return {"markdown": markdown, "formatVersion": fixture["formatVersion"]}
